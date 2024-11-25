@@ -27,14 +27,27 @@ public class BillRestController {
 
     @GetMapping(path = "/bills/{id}")
     public Bill getBill(@PathVariable Long id) {
+        // Fetch the bill from the repository
         Bill bill = billRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Bill not found with id: " + id));
-        bill.setCustomer(customerRestClient.getCustomerById(bill.getCustomerId()));
 
+        // Fetch customer details
+        try {
+            bill.setCustomer(customerRestClient.getCustomerById(bill.getCustomerId()));
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching customer details for customerId: " + bill.getCustomerId(), e);
+        }
+
+        // Fetch product details for each product item
         bill.getProductItems().forEach(productItem -> {
-            productItem.setProduct(productRestClient.getProductById(productItem.getProductId()));
+            try {
+                productItem.setProduct(productRestClient.getProductById(productItem.getProductId()));
+            } catch (Exception e) {
+                throw new RuntimeException("Error fetching product details for productId: " + productItem.getProductId(), e);
+            }
         });
 
         return bill;
     }
 }
+
